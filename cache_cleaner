@@ -1,0 +1,43 @@
+#!/bin/sh 
+
+if test -f /tmp/cache_cleaner.txt; then
+	rm /tmp/cache_cleaner.txt
+fi
+
+for x in /var/cache/xbps/*.xbps; do 
+	xbps-query "$(xbps-uhelper binpkgver "$x")" 1>/dev/null 2>&1
+	if [ "$?" = "2" ]; then 
+		echo "$x" >> /tmp/cache_cleaner.txt
+	fi
+done
+
+if test -f /tmp/cache_cleaner.txt; then
+	less /tmp/cache_cleaner.txt	
+	while true; do
+		printf "Clean xbps cache of uninstalled and/or outdated packages? (Y/n): "
+		read -r YyNn
+		case $YyNn in
+		[Yy]* ) while IFS= read -r line; do
+					if [ "$(id -u)" != "0" ] ; then
+						if command -v sudo >/dev/null; then
+							su_cmd="sudo"
+						elif command -v doas >/dev/null; then
+							su_cmd="doas"
+						else
+							echo "cache_cleaner must be run as root to delete cached packages" && exit 1
+						fi
+						"$su_cmd" rm -f "$line" "$line".sig
+					else
+						rm -f "$line" "$line".sig
+					fi
+				done < /tmp/cache_cleaner.txt
+				printf "%s %s\n" "Cleaned xbps cache"
+				rm /tmp/cache_cleaner.txt
+				break ;;
+		[Nn]* ) break ;;
+		*     ) printf "%s %s\n" "Answer (Y)es or (n)o" ;;
+		esac
+	done
+else
+	echo "No uninstalled or outdated packages found in xbps cache"
+fi
