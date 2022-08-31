@@ -1,4 +1,4 @@
-# xbps_cache_cleaner
+# xbps Ccache Cleaner
 
 Shell script used for cleaning the xbps cache of uninstalled and/or outdated packages on Void linux. 
 
